@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#090909">
+<title>Progression Rhythm Generator</title>
+<style>
+:root{
+  --bg:#090909; --card:#111; --card2:#151515; --line:#262626;
+  --text:#f5f5f5; --muted:#8d8d8d; --accent:#b7ff3c;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{
+  margin:0;background:radial-gradient(circle at 50% -10%,#1b1b1b 0,#090909 42%);
+  color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif;
+  min-height:100vh;
+}
+.app{max-width:680px;margin:auto;padding:28px 18px 42px}
+header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:28px}
+.logo{font-size:13px;font-weight:800;letter-spacing:.22em;color:var(--accent)}
+h1{font-size:42px;line-height:.95;margin:8px 0 0;letter-spacing:-.055em}
+.badge{font-size:11px;color:var(--muted);border:1px solid var(--line);padding:7px 9px;border-radius:99px}
+.panel{background:rgba(17,17,17,.92);border:1px solid var(--line);border-radius:20px;padding:18px;margin-bottom:14px}
+label{display:block;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.12em;font-weight:700;margin-bottom:9px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+select,button{
+  width:100%;border-radius:13px;border:1px solid #2d2d2d;background:#181818;color:var(--text);
+  padding:14px;font-size:15px;font-weight:650;outline:none;
+}
+select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,#777 50%),linear-gradient(135deg,#777 50%,transparent 50%);
+background-position:calc(100% - 18px) 18px,calc(100% - 13px) 18px;background-size:5px 5px;background-repeat:no-repeat}
+button{cursor:pointer;transition:.15s transform,.15s background}
+button:active{transform:scale(.98)}
+.generate{background:var(--accent);color:#090909;border-color:var(--accent);font-size:16px;padding:17px;margin-top:14px}
+.result{display:none}
+.result.show{display:block}
+.kicker{color:var(--accent);font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase}
+.keyline{display:flex;justify-content:space-between;align-items:center;margin:8px 0 18px}
+.keyname{font-size:25px;font-weight:800}
+.score{font-size:12px;color:var(--muted)}
+.chords{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:18px}
+.chord{
+  min-height:92px;background:#191919;border:1px solid #2a2a2a;border-radius:14px;
+  display:flex;flex-direction:column;justify-content:center;align-items:center;
+}
+.chord .roman{font-size:12px;color:var(--muted);margin-bottom:6px}
+.chord .name{font-size:21px;font-weight:800}
+.chord .quality{font-size:10px;color:#707070;margin-top:5px}
+.meta{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.meta div{background:#151515;border-radius:12px;padding:12px}
+.meta span{display:block;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+.meta strong{font-size:13px}
+.actions{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:12px}
+.secondary{background:#151515}
+.tension{margin-top:18px}
+.tension-head{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:8px}
+.bars{height:54px;display:flex;gap:5px;align-items:end}
+.bar{flex:1;background:#333;border-radius:5px 5px 2px 2px;min-height:5px}
+.tip{color:#777;font-size:11px;line-height:1.5;margin-top:12px}
+
+.transport-panel{background:#101010;border:1px solid var(--line);border-radius:16px;padding:15px;margin-top:12px}
+.transport-row{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}
+.loop-toggle{display:flex;align-items:center;gap:9px;margin:13px 0 0;color:#aaa;font-size:11px;letter-spacing:.1em}
+.loop-toggle input{accent-color:var(--accent);width:17px;height:17px}
+.transport-status{margin-top:10px;color:#666;font-size:11px}
+.synth-panel{background:#101010;border:1px solid var(--line);border-radius:16px;padding:15px;margin-top:12px}
+.synth-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+.synth-grid label span{float:right;color:var(--accent);font-size:10px;text-transform:none;letter-spacing:0}
+.synth-grid input[type=range]{margin-top:7px}
+
+.rhythm-panel{background:#101010;border:1px solid var(--line);border-radius:16px;padding:15px;margin-top:12px}
+.rhythm-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+.rhythm-grid label span{float:right;color:var(--accent);font-size:10px;text-transform:none;letter-spacing:0}
+.step-labels,.rhythm-grid-steps{display:grid;grid-template-columns:62px repeat(16,1fr);gap:4px}
+.step-labels{margin-top:14px;color:#666;font-size:8px;text-align:center;align-items:end}
+.step-labels span:first-child{ text-align:left }
+.rhythm-row{display:contents}
+.rhythm-name{font-size:10px;color:#999;display:flex;align-items:center;text-transform:uppercase;letter-spacing:.08em}
+.step{
+  appearance:none;width:100%;aspect-ratio:1/1;min-height:15px;padding:0;border-radius:5px;
+  background:#222;border:1px solid #303030;cursor:pointer;
+}
+.step.on{background:var(--accent);border-color:var(--accent)}
+.step.playing{box-shadow:0 0 0 2px #fff inset}
+.audio-controls{margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}
+.audio-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:11px}
+input[type=range]{width:100%;accent-color:var(--accent);vertical-align:middle}
+.range-value{font-size:12px;color:var(--accent);font-weight:800;margin-left:5px}
+.play-row{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:4px}
+.play{background:var(--accent);color:#090909;border-color:var(--accent)}
+
+.header-tools{display:flex;align-items:center;gap:7px}
+.lang-select{width:auto;min-width:58px;padding:8px 24px 8px 9px;font-size:11px;border-radius:99px}
+footer{text-align:center;color:#555;font-size:10px;letter-spacing:.04em;padding:18px 0 6px}
+.tutorial-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.78);backdrop-filter:blur(10px);display:none;align-items:center;justify-content:center;padding:20px;z-index:1000}
+.tutorial-backdrop.show{display:flex}
+.tutorial-card{width:min(480px,100%);background:#111;border:1px solid #303030;border-radius:22px;padding:24px;box-shadow:0 24px 80px rgba(0,0,0,.5)}
+.tutorial-card h2{font-size:28px;line-height:1.05;margin:9px 0}
+.tutorial-card p{color:#999;line-height:1.5;font-size:14px;margin:0 0 18px}
+.tutorial-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.tutorial-step{color:#666;text-align:center;font-size:10px;margin-top:14px;min-height:14px}
+@media(max-width:440px){
+  .rhythm-grid{grid-template-columns:1fr}
+  .step-labels,.rhythm-grid-steps{grid-template-columns:48px repeat(16,1fr);gap:3px}
+  .synth-grid{grid-template-columns:1fr}
+  .app{padding:23px 14px 35px} h1{font-size:37px}
+  .chords{grid-template-columns:repeat(2,1fr)}
+  .chord{min-height:82px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div><div class="logo">PROGRESSION RHYTHM</div><h1>Find the<br>next chord.</h1></div>
+  <div class="header-tools">
+    <select id="language" class="lang-select" aria-label="Language" onchange="setLanguage(this.value)">
+      <option value="tr">TR</option>
+      <option value="en" selected>EN</option>
+      <option value="es">ES</option>
+      <option value="ru">RU</option>
+    </select>
+    <div class="badge">V1.0</div>
+  </div>
+</header>
+
+<section class="panel">
+  <div class="grid">
+    <div><label>Genre</label><select id="genre">
+      <option value="pop">Pop</option><option value="rnb">R&B</option><option value="house">House</option>
+      <option value="garage">UK Garage</option><option value="trap">Trap</option><option value="hiphop">Hip-Hop</option>
+      <option value="edm">EDM</option><option value="dubstep">Dubstep</option><option value="cinematic">Cinematic</option>
+      <option value="jazz">Jazz</option>
+    </select></div>
+    <div><label>Mood</label><select id="mood">
+      <option value="dark">Dark</option><option value="emotional">Emotional</option><option value="euphoric">Euphoric</option>
+      <option value="happy">Happy</option><option value="tense">Tense</option>
+    </select></div>
+    <div><label>Key</label><select id="key">
+      <option value="random">Random</option>
+      <option>C</option><option>C#</option><option>D</option><option>D#</option><option>E</option><option>F</option>
+      <option>F#</option><option>G</option><option>G#</option><option>A</option><option>A#</option><option>B</option>
+    </select></div>
+    <div><label>Scale</label><select id="scale">
+      <option value="major">Major</option><option value="minor">Minor</option>
+    </select></div>
+    <div><label>Length</label><select id="length">
+      <option value="4">4 Chords</option><option value="8">8 Chords</option>
+    </select></div>
+    <div><label>Complexity</label><select id="complexity">
+      <option value="simple">Simple</option><option value="rich">Rich</option>
+    </select></div>
+  </div>
+  <button class="generate" onclick="generate()">GENERATE PROGRESSION</button>
+</section>
+
+<section class="panel result" id="result">
+  <div class="kicker" id="resultGenre">POP</div>
+  <div class="keyline"><div class="keyname" id="resultKey">C Major</div><div class="score" id="score">Harmonic fit 92%</div></div>
+  <div class="chords" id="chords"></div>
+  <div class="meta">
+    <div><span>Function</span><strong id="functions">T → PD → D → T</strong></div>
+    <div><span>Character</span><strong id="character">Balanced</strong></div>
+  </div>
+  <div class="tension">
+    <div class="tension-head"><span>TENSION CURVE</span><span id="tensionText">Resolution</span></div>
+    <div class="bars" id="bars"></div>
+  </div>
+  <div class="actions">
+    <button class="secondary" onclick="generate()">↻ REROLL</button>
+    <button class="secondary" onclick="toggleChordLoop()" id="chordLoopBtn">LOOP: OFF</button>
+    <button class="secondary" onclick="copyProgression()">COPY</button>
+  </div>
+  
+<div class="rhythm-panel">
+  <div class="kicker">RHYTHM GENERATOR</div>
+  <div class="rhythm-grid">
+    <div>
+      <label>Pattern</label>
+      <select id="rhythmStyle">
+        <option value="genre" selected>Genre Based</option>
+        <option value="straight">Straight</option>
+        <option value="syncopated">Syncopated</option>
+        <option value="minimal">Minimal</option>
+      </select>
+    </div>
+    <div>
+      <label>Swing <span id="swingVal">0%</span></label>
+      <input id="swing" type="range" min="0" max="60" step="1" value="0"
+             oninput="swingVal.textContent=this.value+'%'">
+    </div>
+  </div>
+  <div class="step-labels">
+    <span></span><span>1</span><span>2</span><span>3</span><span>4</span>
+    <span>5</span><span>6</span><span>7</span><span>8</span><span>9</span>
+    <span>10</span><span>11</span><span>12</span><span>13</span><span>14</span>
+    <span>15</span><span>16</span>
+  </div>
+  <div id="rhythmGrid" class="rhythm-grid-steps"></div>
+  <div class="play-row">
+    <button class="play" onclick="playRhythm()">▶ RHYTHM</button>
+    <button class="secondary" onclick="toggleRhythmLoop()" id="rhythmLoopBtn">LOOP: OFF</button>
+    <button class="secondary" onclick="generateRhythm()">↻ NEW PATTERN</button>
+  </div>
+  <div class="tip">16-step drum pattern. Kick, snare, hat and percussion are generated from the selected genre.</div>
+</div>
+
+
+<div class="synth-panel">
+    <div class="kicker">SYNTH VOICE</div>
+    <div class="synth-grid">
+      <div>
+        <label>Waveform</label>
+        <select id="waveform">
+          <option value="sine">Sine</option>
+          <option value="triangle" selected>Triangle</option>
+          <option value="sawtooth">Saw</option>
+          <option value="square">Square</option>
+        </select>
+      </div>
+      <div>
+        <label>Attack <span id="attackVal">0.03s</span></label>
+        <input id="attack" type="range" min="0.01" max="1.5" step="0.01" value="0.03" oninput="attackVal.textContent=this.value+'s'">
+      </div>
+      <div>
+        <label>Decay <span id="decayVal">0.15s</span></label>
+        <input id="decay" type="range" min="0.01" max="1.5" step="0.01" value="0.15" oninput="decayVal.textContent=this.value+'s'">
+      </div>
+      <div>
+        <label>Release <span id="releaseVal">0.35s</span></label>
+        <input id="release" type="range" min="0.03" max="2.5" step="0.01" value="0.35" oninput="releaseVal.textContent=this.value+'s'">
+      </div>
+    </div>
+  </div>
+  <div class="audio-controls">
+    <div class="audio-row">
+      <div>
+        <label>BPM</label>
+        <input id="bpm" type="range" min="60" max="180" value="110" oninput="bpmValue.textContent=this.value">
+        <span class="range-value" id="bpmValue">110</span>
+      </div>
+      <div>
+        <label>Chord Length</label>
+        <select id="beats">
+          <option value="1">1 Beat</option>
+          <option value="2">2 Beats</option>
+          <option value="4" selected>4 Beats</option>
+          <option value="8">8 Beats</option>
+        </select>
+      </div>
+    </div>
+    <div class="audio-row">
+      <div>
+        <label>Voicing</label>
+        <select id="voicing">
+          <option value="close">Close</option>
+          <option value="open" selected>Open</option>
+          <option value="wide">Wide</option>
+        </select>
+      </div>
+      <div>
+        <label>Bass</label>
+        <select id="bass">
+          <option value="on" selected>Chord + Bass</option>
+          <option value="off">Chord Only</option>
+        </select>
+      </div>
+    </div>
+    <div class="play-row">
+      <button class="play" onclick="startChordFromUI()">▶ PLAY</button>
+      <button class="secondary" onclick="stopProgression()">■ STOP</button>
+    </div>
+    <div class="tip">Tap a chord to audition it. PLAY runs the whole progression with the selected tempo and voicing.</div>
+  </div>
+</section>
+
+<footer id="footer">© 2026 HS Production. All rights reserved.</footer>
+</div>
+
+<div class="tutorial-backdrop" id="tutorialBackdrop">
+  <div class="tutorial-card" id="tutorialCard">
+    <div class="kicker">WELCOME</div>
+    <h2 id="tutorialTitle">Want a quick tutorial?</h2>
+    <p id="tutorialText">Learn the generator step by step before you start.</p>
+    <div class="tutorial-actions">
+      <button class="play" id="tutorialYes" onclick="startTutorial()">YES, SHOW ME</button>
+      <button class="secondary" id="tutorialNo" onclick="closeTutorial()">SKIP</button>
+    </div>
+    <div class="tutorial-step" id="tutorialStep"></div>
+  </div>
+</div>
+
+<script>
+const NOTES=["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+const NOTE_INDEX={C:0,"C#":1,D:2,"D#":3,E:4,F:5,"F#":6,G:7,"G#":8,A:9,"A#":10,B:11};
+const profiles={
+ pop:{start:["I","vi","IV"],next:{I:{IV:8,V:9,vi:7,ii:5,iii:2},ii:{V:10,IV:3,vi:2,I:3},iii:{vi:7,IV:3,I:2},IV:{V:10,I:7,vi:4,ii:3},V:{I:10,vi:7,IV:1},vi:{IV:8,V:5,ii:3,I:4}}},
+ rnb:{start:["vi","ii","I"],next:{I:{vi:8,IV:5,ii:8,V:4},ii:{V:10,vi:7,IV:4,I:3},iii:{vi:9,IV:4,ii:5},IV:{I:7,ii:7,V:6,vi:6},V:{vi:8,I:8,IV:2},vi:{ii:7,IV:8,I:4,V:4}}},
+ house:{start:["I","vi","IV"],next:{I:{V:9,vi:8,IV:7,ii:2},ii:{V:8,IV:5,vi:4},IV:{V:10,I:7,vi:3},V:{vi:9,I:7},vi:{IV:9,V:6,I:4,ii:2}}},
+ garage:{start:["i","VI","III","VII"],next:{i:{VI:9,III:8,VII:9,iv:4},VI:{III:9,VII:7,iv:6,i:5},III:{VII:9,VI:5,iv:5,i:4},VII:{i:10,VI:6,III:5,iv:3},iv:{VII:8,i:7,VI:5}}},
+ trap:{start:["i","VI","III","VII"],next:{i:{VI:9,III:8,VII:9,iv:5},VI:{III:8,VII:8,i:5,iv:5},III:{VII:9,VI:6,i:4,iv:4},VII:{i:10,VI:7,III:5}}},
+ hiphop:{start:["i","VI","III","VII"],next:{i:{VI:8,III:7,VII:8,iv:6},VI:{III:8,VII:7,i:5,iv:5},III:{VII:8,VI:5,i:4},VII:{i:9,VI:6,III:5}}},
+ edm:{start:["I","V","vi","IV"],next:{I:{V:10,vi:8,IV:6},V:{vi:10,I:7,IV:2},vi:{IV:9,I:5,V:5},IV:{I:8,V:9,vi:5}}},
+ dubstep:{start:["i","VI","III","VII"],next:{i:{VI:10,VII:9,III:8,iv:6},VI:{VII:9,III:8,i:5},III:{VII:10,VI:6,i:4},VII:{i:10,VI:8,III:5},iv:{i:9,VI:5,VII:7}}},
+ cinematic:{start:["i","VI","III"],next:{i:{VI:9,III:8,iv:7,VII:6},VI:{III:9,VII:7,iv:6,i:5},III:{VI:7,VII:9,iv:5,i:4},iv:{VII:9,i:8,VI:5},VII:{i:10,VI:7,III:5}}},
+ jazz:{start:["ii","I","vi"],next:{I:{vi:8,ii:9,IV:6,iii:5},ii:{V:10,I:10,vi:5,IV:4},iii:{vi:8,IV:5,ii:6},IV:{ii:9,V:8,I:6},V:{I:10,vi:7,iii:4},vi:{ii:8,IV:6,V:5,I:3}}}
+};
+const qualities={simple:{major:[""],minor:["m"],dominant:[""],dim:["dim"]},rich:{major:["maj7","add9","6","maj9"],minor:["m7","m9","m11"],dominant:["7","9","sus4"],dim:["dim7"]}};
+
+function weightedChoice(obj){
+  const entries=Array.isArray(obj)?obj.map(x=>[x,1]):Object.entries(obj);
+  const total=entries.reduce((a,b)=>a+b[1],0);
+  let r=Math.random()*total;
+  for(const [k,w] of entries){r-=w;if(r<=0)return k}
+  return entries[entries.length-1][0];
+}
+function getProfileForScale(base,scale){
+  if(scale==="major")return base;
+  const map={"I":"i","ii":"ii°","iii":"III","IV":"iv","V":"v","vi":"VI","vii°":"VII"};
+  const out={start:base.start.map(d=>map[d]||d),next:{}};
+  Object.entries(base.next).forEach(([from,targets])=>{
+    const nf=map[from]||from; out.next[nf]={};
+    Object.entries(targets).forEach(([to,w])=>out.next[nf][map[to]||to]=w);
+  });
+  return out;
+}
+function degreeInfo(d,scale){
+  const semis=scale==="minor"?[0,2,3,5,7,8,10]:[0,2,4,5,7,9,11];
+  const map=scale==="minor"?{"i":0,"ii°":1,"III":2,"iv":3,"v":4,"VI":5,"VII":6}:{"I":0,"ii":1,"iii":2,"IV":3,"V":4,"vi":5,"vii°":6};
+  if(map[d]===undefined)return null;
+  return {idx:map[d],semitones:semis[map[d]]};
+}
+function degreeToNote(d,key,scale){
+  const info=degreeInfo(d,scale);
+  return info?NOTES[(NOTES.indexOf(key)+info.semitones)%12]:key;
+}
+function functionOf(d){
+  if(["I","i","vi","VI","iii","III"].includes(d))return "T";
+  if(["ii","ii°","IV","iv"].includes(d))return "PD";
+  if(["V","vii°","VII"].includes(d))return "D";
+  return "T";
+}
+function weightedNext(current,profile,scale,mood){
+  const choices=profile.next[current]||{};
+  const out={};
+  Object.entries(choices).forEach(([d,w])=>{
+    let m=1,f=functionOf(d);
+    if(mood==="emotional"&&f==="PD")m*=1.3;
+    if(mood==="euphoric"&&f==="T")m*=1.25;
+    if(mood==="happy"&&f==="T")m*=1.3;
+    if(mood==="tense"&&f==="D")m*=1.45;
+    out[d]=w*m;
+  });
+  return Object.keys(out).length?weightedChoice(out):current;
+}
+function chooseQuality(deg,scale,complexity,mood){
+  let type="major";
+  if(scale==="minor"){
+    if(["i","iv","v"].includes(deg))type="minor";
+    else if(deg==="ii°")type="dim";
+    else type="major";
+  }else{
+    if(["ii","iii","vi"].includes(deg))type="minor";
+    else if(deg==="vii°")type="dim";
+  }
+  if(scale==="minor"&&deg==="V")type="dominant";
+  let arr=qualities[complexity][type]||[""];
+  if((mood==="dark"||mood==="emotional"))arr=arr.filter(x=>!["6","maj7"].includes(x));
+  return (arr.length?arr:qualities[complexity][type])[Math.floor(Math.random()*arr.length)];
+}
+function generate(){
+  const genre=document.getElementById("genre").value,mood=document.getElementById("mood").value;
+  const scale=document.getElementById("scale").value,len=+document.getElementById("length").value,complexity=document.getElementById("complexity").value;
+  let key=document.getElementById("key").value;
+  if(key==="random")key=NOTES[Math.floor(Math.random()*12)];
+  const profile=getProfileForScale(profiles[genre],scale);
+  let current=weightedChoice(profile.start),prog=[current];
+  for(let i=1;i<len;i++){
+    let next=weightedNext(current,profile,scale,mood);
+    if(next===current&&Math.random()<.8){
+      const alt=Object.assign({},profile.next[current]||{});delete alt[current];
+      if(Object.keys(alt).length)next=weightedChoice(alt);
+    }
+    prog.push(next);current=next;
+  }
+  render(prog,key,scale,genre,mood,complexity);
+}
+function render(prog,key,scale,genre,mood,complexity){
+  document.getElementById("result").classList.add("show");
+  document.getElementById("resultGenre").textContent=genre.toUpperCase();
+  document.getElementById("resultKey").textContent=key+" "+(scale==="major"?"Major":"Minor");
+  const chords=document.getElementById("chords");chords.innerHTML="";
+  window.lastNotes=[];
+  const tensions=[];
+  prog.forEach((d,i)=>{
+    const note=degreeToNote(d,key,scale),q=chooseQuality(d,scale,complexity,mood);
+    window.lastNotes.push({note,q});
+    const el=document.createElement("button");el.className="chord";el.type="button";el.onclick=()=>auditionChord(note,q);
+    el.innerHTML=`<div class="roman">${d}</div><div class="name">${note+q}</div><div class="quality">${functionOf(d)}</div>`;
+    chords.appendChild(el);
+    let t=functionOf(d)==="D"?85:functionOf(d)==="PD"?55:30;
+    if(i===prog.length-1)t=10;
+    tensions.push(Math.max(8,Math.min(100,t+(Math.random()*16-8))));
+  });
+  document.getElementById("score").textContent=`Harmonic fit ${78+Math.floor(Math.random()*18)}%`;
+  document.getElementById("functions").textContent=prog.map(functionOf).join(" → ");
+  document.getElementById("character").textContent=mood==="dark"?"Dark / tense":mood==="emotional"?"Emotional":mood==="euphoric"?"Euphoric":mood==="happy"?"Bright":"Tense";
+  const bars=document.getElementById("bars");bars.innerHTML="";
+  tensions.forEach(t=>{const b=document.createElement("div");b.className="bar";b.style.height=t+"%";bars.appendChild(b)});
+  document.getElementById("tensionText").textContent=tensions[tensions.length-1]<25?"Resolution":"Building tension";
+  window.lastProgression=window.lastNotes.map(c=>c.note+c.q).join(" → ");
+  stopAllAudio();
+  generateRhythm();
+}
+
+function copyProgression(){
+  if(!window.lastProgression)return;
+  if(navigator.clipboard&&window.isSecureContext)navigator.clipboard.writeText(window.lastProgression).then(()=>alert("Progression kopyalandı.")).catch(()=>fallbackCopy());
+  else fallbackCopy();
+}
+function fallbackCopy(){
+  const ta=document.createElement("textarea");ta.value=window.lastProgression;document.body.appendChild(ta);ta.select();
+  try{document.execCommand("copy");alert("Progression kopyalandı.")}catch(e){alert(window.lastProgression)}ta.remove();
+}
+
+/* ---------- SYNTH / TRANSPORT ---------- */
+let audioCtx=null,master=null;
+let activeSources=new Set(), activeChordSources=new Set(), chordTimers=[], rhythmTimers=[];
+let chordPlaying=false,rhythmPlaying=false,chordLoop=false,rhythmLoop=false;
+let chordToken=0,rhythmToken=0,rhythmAnchorTime=null;
+
+function ensureAudio(){
+  if(!audioCtx){
+    audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+    master=audioCtx.createGain();master.gain.value=.24;master.connect(audioCtx.destination);
+  }
+  if(audioCtx.state==="suspended")audioCtx.resume();
+}
+function midiToFreq(m){return 440*Math.pow(2,(m-69)/12)}
+function noteToMidi(note,oct=4){return 12*(oct+1)+NOTE_INDEX[note]}
+function parseQuality(q){
+  if(!q)return {third:4,fifth:7,seventh:null,ninth:null,sus:false};
+  const minor=q.includes("m")&&!q.includes("maj");
+  return {third:minor?3:4,fifth:7,seventh:q.includes("maj7")?11:(q.includes("7")||q.includes("9")||q.includes("sus4")?10:null),ninth:q.includes("9")?14:null,sus:q.includes("sus4")};
+}
+function chordMidi(note,q,mode){
+  const root=noteToMidi(note,3),x=parseQuality(q),ints=[0];
+  ints.push(x.sus?5:x.third);ints.push(x.fifth);if(x.seventh!==null)ints.push(x.seventh);if(x.ninth!==null)ints.push(x.ninth);
+  if(mode==="close")return ints.map(v=>root+v);
+  if(mode==="open")return ints.map((v,i)=>root+v+(i>=2?12:0));
+  return ints.map((v,i)=>root+v+(i===0?0:i===1?12:24));
+}
+function synthSettings(){
+  return {waveform:document.getElementById("waveform")?.value||"triangle",attack:+document.getElementById("attack")?.value||.03,decay:+document.getElementById("decay")?.value||.15,release:+document.getElementById("release")?.value||.35};
+}
+function playTone(midi,start,dur,type="chord",velocity=.1){
+  const st=synthSettings(),osc=audioCtx.createOscillator(),gain=audioCtx.createGain(),filter=audioCtx.createBiquadFilter();
+  activeSources.add(osc);activeChordSources.add(osc);
+  osc.onended=()=>{activeSources.delete(osc);activeChordSources.delete(osc)};
+  osc.type=st.waveform;osc.frequency.value=midiToFreq(midi);filter.type="lowpass";filter.frequency.value=type==="bass"?1200:3200;
+  const a=Math.min(st.attack,dur*.25),d=Math.min(st.decay,dur*.35),r=Math.min(st.release,Math.max(.03,dur*.35)),relStart=Math.max(start+a+d+.01,start+dur-r),sus=Math.max(.0001,velocity*.68);
+  gain.gain.setValueAtTime(.0001,start);gain.gain.linearRampToValueAtTime(velocity,start+a);gain.gain.linearRampToValueAtTime(sus,start+a+d);gain.gain.setValueAtTime(sus,relStart);gain.gain.exponentialRampToValueAtTime(.0001,relStart+r);
+  osc.connect(filter);filter.connect(gain);gain.connect(master);osc.start(start);osc.stop(relStart+r+.03);
+}
+function auditionChord(note,q){
+  ensureAudio();const now=audioCtx.currentTime+.03,mode=document.getElementById("voicing").value,bass=document.getElementById("bass").value==="on";
+  chordMidi(note,q,mode).forEach(m=>playTone(m,now,1.7,"chord",.095));if(bass)playTone(noteToMidi(note,2),now,1.7,"bass",.16);
+}
+function stopChordOnly(){
+  chordToken++;
+  chordTimers.forEach(clearTimeout);chordTimers=[];
+  activeChordSources.forEach(n=>{try{n.stop()}catch(e){}});
+  activeChordSources.clear();
+  chordPlaying=false;
+}
+function stopRhythmOnly(){rhythmToken++;rhythmTimers.forEach(clearTimeout);rhythmTimers=[];rhythmPlaying=false;rhythmAnchorTime=null;clearRhythmPlaying()}
+function silenceAudio(){
+  activeSources.forEach(n=>{try{n.stop()}catch(e){}});activeSources.clear();
+  if(master&&audioCtx){const t=audioCtx.currentTime;master.gain.cancelScheduledValues(t);master.gain.setValueAtTime(.0001,t);setTimeout(()=>{if(master&&!chordPlaying&&!rhythmPlaying)master.gain.value=.24},90)}
+}
+function stopAllAudio(){
+  stopChordOnly();stopRhythmOnly();silenceAudio();
+}
+function scheduleChordCycle(start,token){
+  if(!window.lastNotes?.length)return 0;
+  const bpm=+document.getElementById("bpm").value||110,beats=+document.getElementById("beats").value,step=60/bpm,dur=beats*step,mode=document.getElementById("voicing").value,bass=document.getElementById("bass").value==="on";
+  let t=start;
+  window.lastNotes.forEach(c=>{chordMidi(c.note,c.q,mode).forEach(m=>playTone(m,t,dur*.94,"chord",.09));if(bass)playTone(noteToMidi(c.note,2),t,dur*.94,"bass",.15);t+=dur});
+  chordTimers.push(setTimeout(()=>{if(token!==chordToken||!chordPlaying)return;if(chordLoop)scheduleChordCycle(t,token);else chordPlaying=false},Math.max(0,(t-audioCtx.currentTime)*1000+30)));
+  return t-start;
+}
+function getNextRhythmBar(){
+  const bpm=+document.getElementById("bpm").value||110;
+  const bar=(60/bpm)*4;
+  const now=audioCtx.currentTime;
+  if(!rhythmPlaying || rhythmAnchorTime===null) return now+.08;
+  const elapsed=Math.max(0,now-rhythmAnchorTime);
+  return rhythmAnchorTime+Math.ceil((elapsed-.002)/bar)*bar;
+}
+function startChordFromUI(){
+  playProgression();
+}
+function stopProgression(){
+  stopChordOnly();
+}
+function playProgression(){
+  if(!window.lastNotes?.length)return;
+  ensureAudio();
+  stopChordOnly();
+  const token=++chordToken;
+  chordPlaying=true;
+  const start=getNextRhythmBar();
+  scheduleChordCycle(start,token);
+}
+function toggleChordLoop(){
+  chordLoop=!chordLoop;const b=document.getElementById("chordLoopBtn");
+  b.textContent=chordLoop?"↻ LOOP: ON":"↻ LOOP: OFF";b.classList.toggle("play",chordLoop);
+  if(!chordLoop&&chordPlaying)stopChordOnly();
+}
+
+/* ---------- RHYTHM ---------- */
+const rhythmRows=["kick","snare","hat","perc"];
+let rhythmPattern={kick:Array(16).fill(0),snare:Array(16).fill(0),hat:Array(16).fill(0),perc:Array(16).fill(0)};
+
+function chance(p){return Math.random()<p}
+function baseRhythm(genre,style){
+  const p={kick:Array(16).fill(0),snare:Array(16).fill(0),hat:Array(16).fill(0),perc:Array(16).fill(0)},set=(r,a)=>a.forEach(i=>p[r][i]=1);
+  set("snare",[4,12]);
+  if(style==="minimal"){set("kick",[0,8]);if(chance(.5))p.hat[10]=1;return p}
+  if(style==="straight"){set("kick",[0,4,8,12]);set("hat",[0,2,4,6,8,10,12,14]);if(chance(.45))set("perc",[3,11]);return p}
+  if(style==="syncopated"){set("kick",[0,3,6,8,10,14]);set("hat",[0,2,3,6,8,10,11,14]);set("perc",[2,7,10,15]);if(chance(.5))p.snare[15]=1;return p}
+  const patterns={
+    house:[[0,4,8,12],[2,6,10,14],[3,7,11,15]],
+    edm:[[0,4,8,12],[2,6,10,14],[3,7,11,15]],
+    garage:[[0,3,6,8,10,14],[0,2,4,6,8,10,12,14],[3,7,11,15]],
+    trap:[[0,3,7,10,14],[0,2,4,6,8,10,12,14],[3,11,15]],
+    hiphop:[[0,3,8,10,14],[0,2,4,6,8,10,12,14],[3,7,11]],
+    dubstep:[[0,5,8,11,14],[2,6,10,14],[3,7,15]],
+    rnb:[[0,3,8,10,14],[0,2,4,6,8,10,12,14],[3,7,11,15]],
+    jazz:[[0,8],[2,6,10,14],[3,7,11,15]],
+    cinematic:[[0,8],[4,12],[7,15]],
+    pop:[[0,4,8,12],[0,2,4,6,8,10,12,14],[3,11]]
+  };
+  const a=patterns[genre]||patterns.pop;set("kick",a[0]);set("hat",a[1]);set("perc",a[2]);
+  for(let i=0;i<16;i++){if(i!==4&&i!==12&&chance(.06))p.snare[i]^=1;if(chance(.08))p.hat[i]^=1;if(chance(.06))p.perc[i]^=1}
+  return p;
+}
+function renderRhythm(){
+  const grid=document.getElementById("rhythmGrid");if(!grid)return;grid.innerHTML="";
+  rhythmRows.forEach(row=>{
+    const label=document.createElement("div");label.className="rhythm-name";label.textContent=row;grid.appendChild(label);
+    for(let i=0;i<16;i++){const b=document.createElement("button");b.type="button";b.className="step"+(rhythmPattern[row][i]?" on":"");b.onclick=()=>{rhythmPattern[row][i]^=1;b.classList.toggle("on")};grid.appendChild(b)}
+  });
+}
+function generateRhythm(){
+  rhythmPattern=baseRhythm(document.getElementById("genre")?.value||"pop",document.getElementById("rhythmStyle")?.value||"genre");renderRhythm();
+}
+function drumKick(t){
+  const o=audioCtx.createOscillator(),g=audioCtx.createGain();activeSources.add(o);o.onended=()=>activeSources.delete(o);
+  o.type="sine";o.frequency.setValueAtTime(145,t);o.frequency.exponentialRampToValueAtTime(48,t+.11);g.gain.setValueAtTime(.001,t);g.gain.exponentialRampToValueAtTime(.5,t+.006);g.gain.exponentialRampToValueAtTime(.001,t+.22);o.connect(g);g.connect(master);o.start(t);o.stop(t+.24);
+}
+function noiseHit(t,dur,amp,hpf){
+  const b=audioCtx.createBuffer(1,audioCtx.sampleRate*dur,audioCtx.sampleRate),data=b.getChannelData(0);for(let i=0;i<data.length;i++)data[i]=(Math.random()*2-1)*Math.pow(1-i/data.length,2);
+  const src=audioCtx.createBufferSource(),g=audioCtx.createGain(),f=audioCtx.createBiquadFilter();activeSources.add(src);src.onended=()=>activeSources.delete(src);
+  src.buffer=b;f.type="highpass";f.frequency.value=hpf;g.gain.setValueAtTime(.001,t);g.gain.exponentialRampToValueAtTime(amp,t+.002);g.gain.exponentialRampToValueAtTime(.001,t+dur);src.connect(f);f.connect(g);g.connect(master);src.start(t);
+}
+function drumSnare(t){noiseHit(t,.16,.22,1400)}
+function drumHat(t){noiseHit(t,.055,.08,6500)}
+function drumPerc(t){
+  const o=audioCtx.createOscillator(),g=audioCtx.createGain();activeSources.add(o);o.onended=()=>activeSources.delete(o);o.type="triangle";o.frequency.setValueAtTime(900,t);o.frequency.exponentialRampToValueAtTime(420,t+.06);g.gain.setValueAtTime(.001,t);g.gain.exponentialRampToValueAtTime(.11,t+.003);g.gain.exponentialRampToValueAtTime(.001,t+.08);o.connect(g);g.connect(master);o.start(t);o.stop(t+.09);
+}
+function clearRhythmPlaying(){document.querySelectorAll(".step.playing").forEach(x=>x.classList.remove("playing"))}
+function scheduleRhythmBar(start,token){
+  const bpm=+document.getElementById("bpm").value||110,step=60/bpm/4,swing=(+document.getElementById("swing").value||0)/100;
+  for(let i=0;i<16;i++){
+    const t=start+i*step+(i%2?step*swing*.5:0);
+    if(rhythmPattern.kick[i])drumKick(t);if(rhythmPattern.snare[i])drumSnare(t);if(rhythmPattern.hat[i])drumHat(t);if(rhythmPattern.perc[i])drumPerc(t);
+    rhythmTimers.push(setTimeout(()=>{if(token!==chordToken||!rhythmPlaying)return;clearRhythmPlaying();const bs=document.querySelectorAll(".step");for(let r=0;r<4;r++){const b=bs[r*16+i];if(b)b.classList.add("playing")}},Math.max(0,(t-audioCtx.currentTime)*1000)));
+  }
+  return step*16;
+}
+function playRhythm(){
+  ensureAudio();
+  stopRhythmOnly();
+  const token=++rhythmToken;
+  rhythmPlaying=true;
+  const bpm=+document.getElementById("bpm").value||110;
+  const loopDur=60/bpm*4;
+  rhythmAnchorTime=audioCtx.currentTime+.08;
+  function again(loopStart){
+    if(token!==rhythmToken||!rhythmPlaying)return;
+    scheduleRhythmBar(loopStart,token);
+    rhythmTimers.push(setTimeout(()=>{
+      if(token!==rhythmToken||!rhythmPlaying)return;
+      if(rhythmLoop) again(loopStart+loopDur);
+      else {rhythmPlaying=false;rhythmAnchorTime=null;clearRhythmPlaying();}
+    },loopDur*1000+30));
+  }
+  again(rhythmAnchorTime);
+}
+function toggleRhythmLoop(){
+  rhythmLoop=!rhythmLoop;const b=document.getElementById("rhythmLoopBtn");b.textContent=rhythmLoop?"↻ LOOP: ON":"↻ LOOP: OFF";b.classList.toggle("play",rhythmLoop);
+  if(!rhythmLoop&&rhythmPlaying)stopRhythmOnly();
+}
+
+const translations={
+  en:{
+    logo:"PROGRESSION RHYTHM",title:"Find the<br>next chord.",genre:"Genre",mood:"Mood",key:"Key",scale:"Scale",length:"Length",complexity:"Complexity",
+    generate:"GENERATE PROGRESSION",function:"Function",character:"Character",tension:"TENSION CURVE",resolution:"Resolution",reroll:"↻ REROLL",copy:"COPY",
+    rhythm:"RHYTHM GENERATOR",pattern:"Pattern",swing:"Swing",rhythmBtn:"▶ RHYTHM",rhythmLoop:"↻ LOOP: OFF",newPattern:"↻ NEW PATTERN",
+    synth:"SYNTH VOICE",waveform:"Waveform",attack:"Attack",decay:"Decay",release:"Release",bpm:"BPM",chordLength:"Chord Length",voicing:"Voicing",bass:"Bass",play:"▶ PLAY",stop:"■ STOP",
+    tutorialTitle:"Want a quick tutorial?",tutorialText:"Learn the generator step by step before you start.",yes:"YES, SHOW ME",no:"SKIP",welcome:"WELCOME",
+    tutorialStep1:"Choose a genre and mood. The harmonic engine uses them to shape the progression.",
+    tutorialStep2:"Choose a key and scale. Roman numerals are converted into real chords automatically.",
+    tutorialStep3:"Generate a progression. Tap a chord to hear it, or use PLAY to hear the whole sequence.",
+    tutorialStep4:"Build a drum loop here. You can edit every 16th step manually.",
+    tutorialStep5:"Shape the synth with waveform, attack, decay and release. Then you're ready to sketch.",
+    done:"YOU'RE READY",close:"START MAKING",
+    tipChord:"Tap a chord to audition it. PLAY runs the whole progression with the selected tempo and voicing.",
+    tipRhythm:"16-step drum pattern. Kick, snare, hat and percussion are generated from the selected genre.",
+    footer:"© 2026 HS Production. All rights reserved."
+  },
+  tr:{
+    logo:"PROGRESSION RHYTHM",title:"Bir sonraki<br>akoru bul.",genre:"Genre",mood:"Mood",key:"Ton",scale:"Dizi",length:"Uzunluk",complexity:"Karmaşıklık",
+    generate:"PROGRESSION OLUŞTUR",function:"Fonksiyon",character:"Karakter",tension:"GERİLİM EĞRİSİ",resolution:"Çözülme",reroll:"↻ YENİLE",copy:"KOPYALA",
+    rhythm:"RİTİM OLUŞTURUCU",pattern:"Pattern",swing:"Swing",rhythmBtn:"▶ RİTİM",rhythmLoop:"↻ LOOP: KAPALI",newPattern:"↻ YENİ PATTERN",
+    synth:"SYNTH SESİ",waveform:"Dalga Formu",attack:"Attack",decay:"Decay",release:"Release",bpm:"BPM",chordLength:"Akor Uzunluğu",voicing:"Voicing",bass:"Bass",play:"▶ ÇAL",stop:"■ DUR",
+    tutorialTitle:"Kısa bir tutorial ister misin?",tutorialText:"Başlamadan önce generator'ı adım adım öğren.",yes:"EVET, GÖSTER",no:"GEÇ",welcome:"HOŞ GELDİN",
+    tutorialStep1:"Genre ve mood seç. Harmonic engine bunları kullanarak progression'ın karakterini belirler.",
+    tutorialStep2:"Ton ve dizi seç. Roman numeral'lar otomatik olarak gerçek akorlara çevrilir.",
+    tutorialStep3:"Progression oluştur. Tek bir akoru duymak için karta bas veya tümünü PLAY ile çal.",
+    tutorialStep4:"Buradan drum loop oluştur. 16 step'in tamamını tek tek değiştirebilirsin.",
+    tutorialStep5:"Waveform, attack, decay ve release ile synth'i şekillendir. Sonra sketch'e hazırsın.",
+    done:"HAZIRSIN",close:"BAŞLAYALIM",
+    tipChord:"Bir akoru duymak için karta bas. PLAY, seçtiğin tempo ve voicing ile tüm progression'ı çalar.",
+    tipRhythm:"16-step drum pattern. Kick, snare, hat ve percussion seçtiğin genre'ye göre oluşturulur.",
+    footer:"© 2026 HS Production. Tüm hakları saklıdır."
+  },
+  es:{
+    logo:"PROGRESSION RHYTHM",title:"Encuentra el<br>siguiente acorde.",genre:"Género",mood:"Mood",key:"Tonalidad",scale:"Escala",length:"Longitud",complexity:"Complejidad",
+    generate:"GENERAR PROGRESIÓN",function:"Función",character:"Carácter",tension:"CURVA DE TENSIÓN",resolution:"Resolución",reroll:"↻ OTRA",copy:"COPIAR",
+    rhythm:"GENERADOR DE RITMO",pattern:"Patrón",swing:"Swing",rhythmBtn:"▶ RITMO",rhythmLoop:"↻ LOOP: OFF",newPattern:"↻ NUEVO PATRÓN",
+    synth:"VOZ DEL SINTETIZADOR",waveform:"Forma de onda",attack:"Ataque",decay:"Decay",release:"Release",bpm:"BPM",chordLength:"Duración del acorde",voicing:"Voicing",bass:"Bajo",play:"▶ REPRODUCIR",stop:"■ PARAR",
+    tutorialTitle:"¿Quieres un tutorial rápido?",tutorialText:"Aprende el generador paso a paso antes de empezar.",yes:"SÍ, MOSTRAR",no:"SALTAR",welcome:"BIENVENIDO",
+    tutorialStep1:"Elige género y mood. El motor armónico los usa para definir la progresión.",
+    tutorialStep2:"Elige tonalidad y escala. Los números romanos se convierten automáticamente en acordes.",
+    tutorialStep3:"Genera una progresión. Toca un acorde para escucharlo o PLAY para toda la secuencia.",
+    tutorialStep4:"Crea aquí un loop de batería. Puedes editar cada paso de los 16 manualmente.",
+    tutorialStep5:"Moldea el synth con waveform, attack, decay y release. Ya estás listo para crear.",
+    done:"LISTO",close:"EMPEZAR",
+    tipChord:"Toca un acorde para escucharlo. PLAY reproduce toda la progresión con el tempo y voicing elegidos.",
+    tipRhythm:"Patrón de batería de 16 pasos. Kick, snare, hat y percusión se generan según el género.",
+    footer:"© 2026 HS Production. Todos los derechos reservados."
+  },
+  ru:{
+    logo:"PROGRESSION RHYTHM",title:"Найди следующий<br>аккорд.",genre:"Жанр",mood:"Настроение",key:"Тональность",scale:"Лад",length:"Длина",complexity:"Сложность",
+    generate:"СОЗДАТЬ ПРОГРЕССИЮ",function:"Функция",character:"Характер",tension:"КРИВАЯ НАПРЯЖЕНИЯ",resolution:"Разрешение",reroll:"↻ ЕЩЁ",copy:"КОПИРОВАТЬ",
+    rhythm:"ГЕНЕРАТОР РИТМА",pattern:"Паттерн",swing:"Swing",rhythmBtn:"▶ РИТМ",rhythmLoop:"↻ LOOP: ВЫКЛ",newPattern:"↻ НОВЫЙ ПАТТЕРН",
+    synth:"SYNTH VOICE",waveform:"Форма волны",attack:"Attack",decay:"Decay",release:"Release",bpm:"BPM",chordLength:"Длина аккорда",voicing:"Voicing",bass:"Бас",play:"▶ ИГРАТЬ",stop:"■ СТОП",
+    tutorialTitle:"Нужен быстрый туториал?",tutorialText:"Изучи генератор пошагово перед началом.",yes:"ДА, ПОКАЗАТЬ",no:"ПРОПУСТИТЬ",welcome:"ДОБРО ПОЖАЛОВАТЬ",
+    tutorialStep1:"Выбери жанр и настроение. Гармонический движок использует их для построения прогрессии.",
+    tutorialStep2:"Выбери тональность и лад. Римские цифры автоматически превращаются в реальные аккорды.",
+    tutorialStep3:"Создай прогрессию. Нажми на аккорд, чтобы услышать его, или PLAY для всей последовательности.",
+    tutorialStep4:"Создай здесь drum loop. Каждый из 16 шагов можно менять вручную.",
+    tutorialStep5:"Настрой synth с помощью waveform, attack, decay и release. Всё готово для скетча.",
+    done:"ГОТОВО",close:"НАЧАТЬ",
+    tipChord:"Нажми на аккорд, чтобы прослушать его. PLAY проигрывает всю прогрессию с выбранным темпом и voicing.",
+    tipRhythm:"16-шаговый drum pattern. Kick, snare, hat и percussion генерируются по выбранному жанру.",
+    footer:"© 2026 HS Production. Все права защищены."
+  }
+};
+let currentLanguage="en";
+function setText(selector,text){const el=document.querySelector(selector);if(el)el.innerHTML=text}
+function setLanguage(lang){
+  currentLanguage=translations[lang]?lang:"en";const t=translations[currentLanguage];
+  setText(".logo",t.logo);setText("h1",t.title);
+  const labels=document.querySelectorAll("section.panel label");
+  // Fixed labels by control order.
+  const labelMap=["genre","mood","key","scale","length","complexity"];
+  labelMap.forEach((id,i)=>{const el=document.querySelector(`label[for="${id}"]`);if(el)el.textContent=t[id]});
+  document.querySelectorAll(".grid > div > label").forEach((el,i)=>{if(i<6)el.textContent=t[labelMap[i]]});
+  setText(".generate",t.generate);setText(".kicker#none","");
+  const fk=document.querySelector("#functions")?.parentElement?.querySelector("span");if(fk)fk.textContent=t.function;
+  const ck=document.querySelector("#character")?.parentElement?.querySelector("span");if(ck)ck.textContent=t.character;
+  const tk=document.querySelector(".tension-head span:first-child");if(tk)tk.textContent=t.tension;
+  const tr=document.querySelector(".tension-head span:last-child");if(tr && !document.getElementById("tensionText").textContent.includes("%"))tr.textContent=t.resolution;
+  const acts=document.querySelector(".actions");
+  if(acts){const bs=acts.querySelectorAll("button");if(bs[0])bs[0].textContent=t.reroll;if(bs[1])bs[1].textContent=chordLoop?"↻ LOOP: ON":t.rhythmLoop.replace("OFF","OFF");if(bs[2])bs[2].textContent=t.copy}
+  const rk=document.querySelector(".rhythm-panel .kicker");if(rk)rk.textContent=t.rhythm;
+  const rp=document.querySelector("#rhythmStyle")?.parentElement?.querySelector("label");if(rp)rp.textContent=t.pattern;
+  const sw=document.querySelector("#swing")?.parentElement?.querySelector("label");if(sw){sw.innerHTML=t.swing+' <span id="swingVal">'+document.getElementById("swingVal").textContent+'</span>'}
+  const rbs=document.querySelectorAll(".rhythm-panel .play-row button");if(rbs[0])rbs[0].textContent=t.rhythmBtn;if(rbs[1])rbs[1].textContent=rhythmLoop?"↻ LOOP: ON":t.rhythmLoop;if(rbs[2])rbs[2].textContent=t.newPattern;
+  const sk=document.querySelector(".synth-panel .kicker");if(sk)sk.textContent=t.synth;
+  const synthLabels=document.querySelectorAll(".synth-grid label");if(synthLabels.length>=4){synthLabels[0].childNodes[0].textContent=t.waveform+" ";synthLabels[1].childNodes[0].textContent=t.attack+" ";synthLabels[2].childNodes[0].textContent=t.decay+" ";synthLabels[3].childNodes[0].textContent=t.release+" "}
+  const audioLabels=document.querySelectorAll(".audio-controls .audio-row label");const al=[t.bpm,t.chordLength,t.voicing,t.bass];audioLabels.forEach((e,i)=>{if(al[i])e.textContent=al[i]});
+  const ab=document.querySelector(".audio-controls .play-row");if(ab){const bs=ab.querySelectorAll("button");if(bs[0])bs[0].textContent=t.play;if(bs[1])bs[1].textContent=t.stop}
+  const tip=document.querySelector(".audio-controls .tip");if(tip)tip.textContent=t.tipChord;
+  const rtip=document.querySelector(".rhythm-panel .tip");if(rtip)rtip.textContent=t.tipRhythm;
+  setText("#footer",t.footer);
+  setText("#tutorialTitle",t.tutorialTitle);setText("#tutorialText",t.tutorialText);setText("#tutorialYes",t.yes);setText("#tutorialNo",t.no);
+  document.querySelector(".tutorial-card .kicker").textContent=t.welcome;
+  if(document.getElementById("tutorialStep").dataset.active==="done")setText("#tutorialStep",t.done);
+}
+function startTutorial(){
+  const t=translations[currentLanguage];
+  const card=document.getElementById("tutorialCard"),step=document.getElementById("tutorialStep");
+  let i=0;
+  const steps=[t.tutorialStep1,t.tutorialStep2,t.tutorialStep3,t.tutorialStep4,t.tutorialStep5];
+  document.getElementById("tutorialTitle").textContent=t.tutorialTitle;
+  document.getElementById("tutorialText").textContent=steps[0];
+  document.getElementById("tutorialYes").textContent="NEXT →";
+  document.getElementById("tutorialNo").textContent="SKIP";
+  step.textContent="1 / 5";
+  document.getElementById("tutorialYes").onclick=function(){
+    i++;
+    if(i<steps.length){document.getElementById("tutorialText").textContent=steps[i];step.textContent=(i+1)+" / 5"}
+    else{document.getElementById("tutorialTitle").textContent=t.done;document.getElementById("tutorialText").textContent=t.tutorialStep5;step.dataset.active="done";step.textContent=t.done;this.textContent=t.close;this.onclick=closeTutorial}
+  };
+}
+function closeTutorial(){
+  document.getElementById("tutorialBackdrop").classList.remove("show");
+  try{localStorage.setItem("prgTutorialSeen","1")}catch(e){}
+}
+function maybeShowTutorial(){
+  try{
+    if(!localStorage.getItem("prgTutorialSeen"))document.getElementById("tutorialBackdrop").classList.add("show");
+  }catch(e){document.getElementById("tutorialBackdrop").classList.add("show")}
+}
+
+generate();
+generateRhythm();
+setLanguage("en");
+setTimeout(maybeShowTutorial,350);
+</script>
+</body>
+</html>
