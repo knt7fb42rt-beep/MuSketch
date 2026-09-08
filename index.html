@@ -108,12 +108,43 @@ footer{text-align:center;color:#555;font-size:10px;letter-spacing:.04em;padding:
   .chords{grid-template-columns:repeat(2,1fr)}
   .chord{min-height:82px}
 }
+
+/* ---------- V1.1: DRAWER / SAVES / CHORD EDITOR / AUTH ---------- */
+body.drawer-open{overflow:hidden}
+.menu-btn{width:42px;height:42px;padding:0;border-radius:12px;font-size:20px;background:#151515;border-color:#2d2d2d;display:flex;align-items:center;justify-content:center}
+.drawer-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.58);backdrop-filter:blur(6px);display:none;z-index:1100}
+.drawer-backdrop.show{display:block}
+.drawer{position:fixed;left:0;top:0;bottom:0;width:min(360px,88vw);background:#0e0e0e;border-right:1px solid #292929;z-index:1101;transform:translateX(-102%);transition:transform .22s ease;padding:22px 16px calc(20px + env(safe-area-inset-bottom));display:flex;flex-direction:column;box-shadow:18px 0 60px rgba(0,0,0,.35)}
+.drawer.show{transform:translateX(0)}
+.drawer-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.drawer-title{font-size:13px;font-weight:800;letter-spacing:.16em;color:var(--accent)}
+.drawer-close{width:38px;height:38px;padding:0}
+.account-box{background:#151515;border:1px solid #282828;border-radius:16px;padding:14px;margin-bottom:16px}
+.account-name{font-weight:800;font-size:15px}.account-email{font-size:11px;color:#777;margin-top:4px;overflow:hidden;text-overflow:ellipsis}
+.saved-title{font-size:10px;color:#777;text-transform:uppercase;letter-spacing:.14em;font-weight:800;margin:10px 3px}
+.saved-list{overflow:auto;flex:1;padding-right:2px}.saved-empty{color:#666;font-size:12px;padding:20px 4px;line-height:1.5}
+.saved-item{width:100%;text-align:left;background:#151515;border:1px solid #252525;padding:12px;margin:6px 0;border-radius:13px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.saved-item.active{border-color:var(--accent)}.saved-item .saved-main{min-width:0}.saved-item .saved-name{font-size:13px;font-weight:750;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.saved-item .saved-sub{font-size:10px;color:#666;margin-top:4px}.saved-delete{width:34px;min-width:34px;padding:8px;font-size:13px;background:#111;color:#777}
+.auth-btn{margin-top:10px;background:var(--accent);color:#090909;border-color:var(--accent)}
+.version{font-size:10px;color:#555;margin-top:12px;text-align:center}
+.chord{position:relative;cursor:pointer;touch-action:none}.chord.dragging{opacity:.45;transform:scale(.98)}.chord.drag-over{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.chord-edit-hint{font-size:9px;color:#555;margin-top:8px;text-align:center}
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.78);backdrop-filter:blur(10px);display:none;align-items:center;justify-content:center;padding:20px;z-index:1200}
+.modal-backdrop.show{display:flex}.modal-card{width:min(500px,100%);max-height:90vh;overflow:auto;background:#111;border:1px solid #303030;border-radius:22px;padding:22px;box-shadow:0 24px 80px rgba(0,0,0,.55)}
+.modal-card h2{font-size:26px;line-height:1.05;margin:8px 0 18px}.modal-sub{font-size:12px;color:#777;line-height:1.45;margin:-8px 0 16px}
+.editor-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.editor-grid .full{grid-column:1/-1}
+.modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:16px}.modal-actions.single{grid-template-columns:1fr}
+.radio-row{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.choice{padding:12px 8px;text-align:center;background:#171717;border:1px solid #292929;border-radius:12px;font-size:12px}.choice.active{border-color:var(--accent);color:var(--accent)}
+.account-toggle{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}.account-toggle button{padding:11px}.account-toggle .active{background:var(--accent);color:#090909;border-color:var(--accent)}
+.auth-error{color:#ff7b7b;font-size:11px;min-height:15px;margin-top:9px}.auth-note{color:#666;font-size:10px;line-height:1.45;margin-top:12px}
+.save-preview{background:#171717;border:1px solid #282828;border-radius:13px;padding:12px;color:#aaa;font-size:12px;line-height:1.5;white-space:pre-wrap}
+@media(max-width:440px){.editor-grid{grid-template-columns:1fr}.editor-grid .full{grid-column:auto}}
 </style>
 </head>
 <body>
 <div class="app">
 <header>
-  <div><div class="logo">PROGRESSION RHYTHM</div><h1>Find the<br>next chord.</h1></div>
+  <div style="display:flex;align-items:flex-start;gap:10px"><button class="menu-btn" onclick="toggleDrawer()" aria-label="Open menu">☰</button><div><div class="logo">MUSKETCH</div><h1>Find the<br>next chord.</h1></div></div>
   <div class="header-tools">
     <select id="language" class="lang-select" aria-label="Language" onchange="setLanguage(this.value)">
       <option value="tr">TR</option>
@@ -121,7 +152,7 @@ footer{text-align:center;color:#555;font-size:10px;letter-spacing:.04em;padding:
       <option value="es">ES</option>
       <option value="ru">RU</option>
     </select>
-    <div class="badge">V1.0</div>
+    <div class="badge">V1.1</div>
   </div>
 </header>
 
@@ -171,7 +202,9 @@ footer{text-align:center;color:#555;font-size:10px;letter-spacing:.04em;padding:
     <button class="secondary" onclick="generate()">↻ REROLL</button>
     <button class="secondary" onclick="toggleChordLoop()" id="chordLoopBtn">LOOP: OFF</button>
     <button class="secondary" onclick="copyProgression()">COPY</button>
+    <button class="secondary" onclick="openSaveModal()">SAVE</button>
   </div>
+  <div class="chord-edit-hint">Tap a chord to edit • Drag cards to reorder</div>
   
 <div class="rhythm-panel">
   <div class="kicker">RHYTHM GENERATOR</div>
@@ -291,6 +324,49 @@ footer{text-align:center;color:#555;font-size:10px;letter-spacing:.04em;padding:
   </div>
 </div>
 
+
+<!-- V1.1 drawer -->
+<div class="drawer-backdrop" id="drawerBackdrop" onclick="closeDrawer()"></div>
+<aside class="drawer" id="drawer" aria-label="Musketch menu">
+  <div class="drawer-head"><div class="drawer-title">MUSKETCH</div><button class="drawer-close" onclick="closeDrawer()">×</button></div>
+  <div class="account-box" id="accountBox">
+    <div class="account-name">Local Saves</div>
+    <div class="account-email">Progressions are downloaded as TXT files to your device.</div>
+  </div>
+  <div class="saved-title">Saved on This Device</div>
+  <div class="saved-list" id="savedList"></div>
+  <div class="version">Musketch V1.1</div>
+</aside>
+
+<!-- Chord editor -->
+<div class="modal-backdrop" id="chordModal">
+  <div class="modal-card">
+    <div class="kicker">CHORD EDITOR</div>
+    <h2>Edit chord</h2>
+    <div class="editor-grid">
+      <div><label>Root</label><select id="editRoot"></select></div>
+      <div><label>Quality</label><select id="editQuality">
+        <option value="">Major</option><option value="m">Minor</option><option value="7">Dominant 7</option><option value="maj7">Major 7</option><option value="m7">Minor 7</option><option value="9">Dominant 9</option><option value="maj9">Major 9</option><option value="m9">Minor 9</option><option value="sus4">Sus 4</option><option value="dim">Diminished</option><option value="dim7">Diminished 7</option><option value="aug">Augmented</option><option value="add9">Add 9</option><option value="6">6</option><option value="m11">Minor 11</option>
+      </select></div>
+      <div class="full"><label>Accidental</label><div class="radio-row" id="accidentalChoices">
+        <button type="button" class="choice active" data-acc="natural">Natural</button><button type="button" class="choice" data-acc="sharp">♯ Sharp</button><button type="button" class="choice" data-acc="flat">♭ Flat</button><button type="button" class="choice" data-acc="auto">Auto</button>
+      </div></div>
+    </div>
+    <div class="modal-actions"><button class="secondary" onclick="closeChordModal()">CANCEL</button><button class="play" onclick="applyChordEdit()">APPLY</button></div>
+  </div>
+</div>
+
+<!-- Save modal -->
+<div class="modal-backdrop" id="saveModal">
+  <div class="modal-card">
+    <div class="kicker">SAVE PROGRESSION</div><h2>Name your progression</h2>
+    <input id="saveName" type="text" maxlength="80" value="New Progression" style="width:100%;border-radius:13px;border:1px solid #2d2d2d;background:#181818;color:#f5f5f5;padding:14px;font-size:15px;font-weight:650;outline:none">
+    <div class="save-preview" id="savePreview"></div>
+    <div class="modal-actions"><button class="secondary" onclick="closeSaveModal()">CANCEL</button><button class="play" onclick="saveCurrentProgression()">SAVE</button></div>
+  </div>
+</div>
+
+
 <script>
 const NOTES=["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
 const NOTE_INDEX={C:0,"C#":1,D:2,"D#":3,E:4,F:5,"F#":6,G:7,"G#":8,A:9,"A#":10,B:11};
@@ -396,8 +472,9 @@ function render(prog,key,scale,genre,mood,complexity){
   prog.forEach((d,i)=>{
     const note=degreeToNote(d,key,scale),q=chooseQuality(d,scale,complexity,mood);
     window.lastNotes.push({note,q});
-    const el=document.createElement("button");el.className="chord";el.type="button";el.onclick=()=>auditionChord(note,q);
+    const el=document.createElement("button");el.className="chord";el.type="button";
     el.innerHTML=`<div class="roman">${d}</div><div class="name">${note+q}</div><div class="quality">${functionOf(d)}</div>`;
+    el.onclick=()=>openChordModal(i);el.addEventListener("contextmenu",e=>{e.preventDefault();auditionChord(note,q)});el.draggable=true;el.addEventListener("dragstart",()=>{dragIndex=i;el.classList.add("dragging")});el.addEventListener("dragend",()=>{dragIndex=-1;el.classList.remove("dragging")});el.addEventListener("dragover",e=>{e.preventDefault();el.classList.add("drag-over")});el.addEventListener("dragleave",()=>el.classList.remove("drag-over"));el.addEventListener("drop",e=>{e.preventDefault();el.classList.remove("drag-over");if(dragIndex<0||dragIndex===i)return;const item=window.lastNotes.splice(dragIndex,1)[0];window.lastNotes.splice(i,0,item);renderManualProgression()});
     chords.appendChild(el);
     let t=functionOf(d)==="D"?85:functionOf(d)==="PD"?55:30;
     if(i===prog.length-1)t=10;
@@ -728,6 +805,81 @@ function maybeShowTutorial(){
   }catch(e){document.getElementById("tutorialBackdrop").classList.add("show")}
 }
 
+
+/* ---------- V1.1 MUSKETCH ---------- */
+const MUSKETCH_STORAGE="musketchProgressionsV11";
+let editingChordIndex=-1,editingAccidental="natural",dragIndex=-1;
+const rootOptions=["C","C#","D","D#","E","F","F#","G","G#","A","A#","B","Cb","Db","Eb","Fb","Gb","Ab","Bb"];
+function toggleDrawer(){document.getElementById("drawer").classList.add("show");document.getElementById("drawerBackdrop").classList.add("show");document.body.classList.add("drawer-open");renderSavedProgressions()}
+function closeDrawer(){document.getElementById("drawer").classList.remove("show");document.getElementById("drawerBackdrop").classList.remove("show");document.body.classList.remove("drawer-open")}
+function openChordModal(i){if(!window.lastNotes?.[i])return;editingChordIndex=i;const c=window.lastNotes[i];
+  const rs=document.getElementById("editRoot");rs.innerHTML=rootOptions.map(n=>`<option value="${n}">${n}</option>`).join("");
+  rs.value=c.note;document.getElementById("editQuality").value=c.q||"";editingAccidental=(c.accidental||"natural");
+  document.querySelectorAll("#accidentalChoices .choice").forEach(b=>b.classList.toggle("active",b.dataset.acc===editingAccidental));document.getElementById("chordModal").classList.add("show");
+}
+function closeChordModal(){document.getElementById("chordModal").classList.remove("show");editingChordIndex=-1}
+document.querySelectorAll("#accidentalChoices .choice").forEach(b=>b.addEventListener("click",()=>{editingAccidental=b.dataset.acc;document.querySelectorAll("#accidentalChoices .choice").forEach(x=>x.classList.toggle("active",x===b))}));
+function applyChordEdit(){if(editingChordIndex<0)return;const note=document.getElementById("editRoot").value,q=document.getElementById("editQuality").value;
+  window.lastNotes[editingChordIndex]={note,q,accidental:editingAccidental};renderManualProgression();closeChordModal();
+}
+function renderManualProgression(){
+  const chords=document.getElementById("chords");chords.innerHTML="";const tensions=[];window.lastNotes.forEach((c,i)=>{const el=document.createElement("button");el.className="chord";el.type="button";el.draggable=true;el.innerHTML=`<div class="roman">${c.roman||"CUSTOM"}</div><div class="name">${c.note+c.q}</div><div class="quality">${qualityLabel(c.q)}</div>`;el.onclick=e=>{if(e.target===el||el.contains(e.target))openChordModal(i)};el.addEventListener("dragstart",()=>{dragIndex=i;el.classList.add("dragging")});el.addEventListener("dragend",()=>{dragIndex=-1;el.classList.remove("dragging");document.querySelectorAll(".chord").forEach(x=>x.classList.remove("drag-over"))});el.addEventListener("dragover",e=>{e.preventDefault();el.classList.add("drag-over")});el.addEventListener("dragleave",()=>el.classList.remove("drag-over"));el.addEventListener("drop",e=>{e.preventDefault();el.classList.remove("drag-over");if(dragIndex<0||dragIndex===i)return;const item=window.lastNotes.splice(dragIndex,1)[0];window.lastNotes.splice(i,0,item);renderManualProgression()});chords.appendChild(el);let t=30;if(c.q.includes("dim"))t=85;else if(c.q.includes("7")||c.q==="9")t=70;else if(c.q.includes("m"))t=50;if(i===window.lastNotes.length-1)t=10;tensions.push(t)});
+  document.getElementById("functions").textContent=window.lastNotes.map(c=>c.function||"T").join(" → ");const bars=document.getElementById("bars");bars.innerHTML="";tensions.forEach(t=>{const b=document.createElement("div");b.className="bar";b.style.height=t+"%";bars.appendChild(b)});document.getElementById("tensionText").textContent="Custom";window.lastProgression=window.lastNotes.map(c=>c.note+c.q).join(" → ");stopAllAudio();
+}
+function qualityLabel(q){return q===""?"Major":q==="m"?"Minor":q||"Major"}
+function serializeCurrent(){return {version:1,key:document.getElementById("resultKey").textContent,notes:window.lastNotes||[],progression:window.lastProgression||"",createdAt:new Date().toISOString()}}
+function getLocalSaves(){try{return JSON.parse(localStorage.getItem(MUSKETCH_STORAGE)||"[]")}catch(e){return []}}
+function setLocalSaves(a){localStorage.setItem(MUSKETCH_STORAGE,JSON.stringify(a))}
+function openSaveModal(){if(!window.lastNotes?.length)return;document.getElementById("saveName").value="New Progression";document.getElementById("savePreview").textContent=window.lastProgression||"";document.getElementById("saveModal").classList.add("show");setTimeout(()=>{const x=document.getElementById("saveName");x.focus();x.select()},80)}
+function closeSaveModal(){document.getElementById("saveModal").classList.remove("show")}
+function saveCurrentProgression(){
+  const name=(document.getElementById("saveName").value||"New Progression").trim()||"New Progression";
+  const item=serializeCurrent();
+  item.id=Date.now().toString(36);
+  item.name=name;
+  const saves=getLocalSaves();
+  saves.unshift(item);
+  setLocalSaves(saves);
+  downloadProgressionTxt(item);
+  closeSaveModal();
+  renderSavedProgressions();
+}
+function downloadProgressionTxt(item){
+  const lines=[
+    "MUSKETCH — PROGRESSION",
+    "========================",
+    "Name: "+item.name,
+    "Key: "+(item.key||"Custom"),
+    "Progression: "+(item.progression||""),
+    "Created: "+new Date(item.createdAt||Date.now()).toLocaleString(),
+    "",
+    "CHORDS",
+    "------"
+  ];
+  (item.notes||[]).forEach((c,i)=>{
+    lines.push((i+1)+". "+(c.note||"")+(c.q||"")+" | "+qualityLabel(c.q||"")+(c.roman?" | "+c.roman:"")+(c.function?" | "+c.function:""));
+  });
+  lines.push("", "MUSKETCH DATA", "-------------", JSON.stringify(item,null,2));
+  const blob=new Blob([lines.join("\n")],{type:"text/plain;charset=utf-8"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;
+  a.download=(sanitizeFileName(name)||"New Progression")+".txt";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function sanitizeFileName(name){return String(name).replace(/[\\/:*?"<>|]/g,"-").replace(/\s+/g," ").trim().slice(0,100)}
+function renderSavedProgressions(){const list=document.getElementById("savedList"),saves=getLocalSaves();list.innerHTML="";if(!saves.length){list.innerHTML='<div class="saved-empty">No saved progressions yet.<br>Tap SAVE to keep your current sketch here.</div>';return}saves.forEach((s,i)=>{const row=document.createElement("div");row.className="saved-item";row.innerHTML=`<div class="saved-main"><div class="saved-name">${escapeHtml(s.name)}</div><div class="saved-sub">${escapeHtml(s.progression||"")}</div></div><button class="saved-delete" type="button" aria-label="Delete">×</button>`;row.querySelector(".saved-main").onclick=()=>loadSavedProgression(i);row.querySelector(".saved-delete").onclick=e=>{e.stopPropagation();const a=getLocalSaves();a.splice(i,1);setLocalSaves(a);renderSavedProgressions()};list.appendChild(row)})}
+function escapeHtml(x){return String(x).replace(/[&<>'"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[m]))}
+function loadSavedProgression(i){const s=getLocalSaves()[i];if(!s)return;window.lastNotes=s.notes||[];window.lastProgression=s.progression||window.lastNotes.map(c=>c.note+c.q).join(" → ");document.getElementById("result").classList.add("show");document.getElementById("resultKey").textContent=s.key||"Custom";document.getElementById("resultGenre").textContent="SAVED";renderManualProgression();closeDrawer()}
+// V1.1 hooks
+const _oldRender=render;
+render=function(prog,key,scale,genre,mood,complexity){_oldRender(prog,key,scale,genre,mood,complexity);window.lastNotes=window.lastNotes.map(c=>Object.assign({},c,{roman:prog[window.lastNotes.indexOf(c)],function:functionOf(prog[window.lastNotes.indexOf(c)])}));};
+const _oldCopy=copyProgression;
+copyProgression=function(){window.lastProgression=window.lastNotes?.map(c=>c.note+c.q).join(" → ")||window.lastProgression;_oldCopy()};
+renderSavedProgressions();
 generate();
 generateRhythm();
 setLanguage("en");
